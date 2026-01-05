@@ -253,7 +253,7 @@ namespace AlbionRefinoHelper
                 tb_material_2_preco.Text = "0";
             }
         }
-
+        /*ayo*/
         private async Task<Mercado> ObterMaterialAnterior(string nomePelegoAtual, string cidadeAlvo)
         {
             string tierAtual = nomePelegoAtual.Split('_')[0];
