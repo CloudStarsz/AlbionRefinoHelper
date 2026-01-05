@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36408.4 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlbionRefinoHelper", "AlbionRefinoHelper\AlbionRefinoHelper.csproj", "{C3834F2E-C544-41E0-BBF0-E7C5D79F5205}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C3834F2E-C544-41E0-BBF0-E7C5D79F5205}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C3834F2E-C544-41E0-BBF0-E7C5D79F5205}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C3834F2E-C544-41E0-BBF0-E7C5D79F5205}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C3834F2E-C544-41E0-BBF0-E7C5D79F5205}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2983FC7E-4423-4FC5-81AE-68FFADB1F36D}
+	EndGlobalSection
+EndGlobal
