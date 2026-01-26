@@ -52,6 +52,8 @@
             cb_cidade_venda = new ComboBox();
             label1 = new Label();
             gb_craft = new GroupBox();
+            label19 = new Label();
+            tb_spf = new TextBox();
             label18 = new Label();
             tb_custo_foco = new TextBox();
             label17 = new Label();
@@ -88,6 +90,7 @@
             tb_item_refinado = new TextBox();
             label9 = new Label();
             label10 = new Label();
+            cb_calc_quant_foco = new CheckBox();
             ((System.ComponentModel.ISupportInitialize)dataGrid_materiais).BeginInit();
             ((System.ComponentModel.ISupportInitialize)dataGrid_Refinos).BeginInit();
             gb_craft.SuspendLayout();
@@ -285,6 +288,9 @@
             // 
             // gb_craft
             // 
+            gb_craft.Controls.Add(cb_calc_quant_foco);
+            gb_craft.Controls.Add(label19);
+            gb_craft.Controls.Add(tb_spf);
             gb_craft.Controls.Add(label18);
             gb_craft.Controls.Add(tb_custo_foco);
             gb_craft.Controls.Add(label17);
@@ -326,10 +332,27 @@
             gb_craft.TabStop = false;
             gb_craft.Text = "Crafting";
             // 
+            // label19
+            // 
+            label19.AutoSize = true;
+            label19.Location = new Point(615, 186);
+            label19.Name = "label19";
+            label19.Size = new Size(112, 15);
+            label19.TabIndex = 38;
+            label19.Text = "SPF (prata por foco)";
+            // 
+            // tb_spf
+            // 
+            tb_spf.Enabled = false;
+            tb_spf.Location = new Point(614, 204);
+            tb_spf.Name = "tb_spf";
+            tb_spf.Size = new Size(125, 23);
+            tb_spf.TabIndex = 37;
+            // 
             // label18
             // 
             label18.AutoSize = true;
-            label18.Location = new Point(503, 214);
+            label18.Location = new Point(443, 223);
             label18.Name = "label18";
             label18.Size = new Size(169, 15);
             label18.TabIndex = 36;
@@ -338,7 +361,7 @@
             // tb_custo_foco
             // 
             tb_custo_foco.Enabled = false;
-            tb_custo_foco.Location = new Point(524, 232);
+            tb_custo_foco.Location = new Point(464, 241);
             tb_custo_foco.Name = "tb_custo_foco";
             tb_custo_foco.Size = new Size(125, 23);
             tb_custo_foco.TabIndex = 35;
@@ -346,7 +369,7 @@
             // label17
             // 
             label17.AutoSize = true;
-            label17.Location = new Point(525, 159);
+            label17.Location = new Point(465, 168);
             label17.Name = "label17";
             label17.Size = new Size(77, 15);
             label17.TabIndex = 34;
@@ -354,7 +377,7 @@
             // 
             // tb_nivel_foco
             // 
-            tb_nivel_foco.Location = new Point(524, 177);
+            tb_nivel_foco.Location = new Point(464, 186);
             tb_nivel_foco.Name = "tb_nivel_foco";
             tb_nivel_foco.Size = new Size(125, 23);
             tb_nivel_foco.TabIndex = 33;
@@ -380,7 +403,7 @@
             // label14
             // 
             label14.AutoSize = true;
-            label14.Location = new Point(745, 186);
+            label14.Location = new Point(770, 186);
             label14.Name = "label14";
             label14.Size = new Size(103, 15);
             label14.TabIndex = 30;
@@ -388,7 +411,7 @@
             // 
             // tb_investimento_total
             // 
-            tb_investimento_total.Location = new Point(745, 204);
+            tb_investimento_total.Location = new Point(770, 204);
             tb_investimento_total.Name = "tb_investimento_total";
             tb_investimento_total.Size = new Size(125, 23);
             tb_investimento_total.TabIndex = 29;
@@ -524,7 +547,7 @@
             // checkBox_cidade_bonus
             // 
             checkBox_cidade_bonus.AutoSize = true;
-            checkBox_cidade_bonus.Location = new Point(160, 164);
+            checkBox_cidade_bonus.Location = new Point(125, 164);
             checkBox_cidade_bonus.Name = "checkBox_cidade_bonus";
             checkBox_cidade_bonus.Size = new Size(104, 19);
             checkBox_cidade_bonus.TabIndex = 13;
@@ -631,6 +654,17 @@
             label10.TabIndex = 14;
             label10.Text = "Selecionar cidade acima";
             // 
+            // cb_calc_quant_foco
+            // 
+            cb_calc_quant_foco.AutoSize = true;
+            cb_calc_quant_foco.Location = new Point(235, 164);
+            cb_calc_quant_foco.Name = "cb_calc_quant_foco";
+            cb_calc_quant_foco.Size = new Size(185, 19);
+            cb_calc_quant_foco.TabIndex = 39;
+            cb_calc_quant_foco.Text = "Calcular quantidade por foco?";
+            cb_calc_quant_foco.UseVisualStyleBackColor = true;
+            cb_calc_quant_foco.CheckedChanged += cb_calc_quant_foco_CheckedChanged;
+            // 
             // TelaPrincipal
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -722,5 +756,8 @@
         private TextBox tb_custo_foco;
         private Label label17;
         private TextBox tb_nivel_foco;
+        private Label label19;
+        private TextBox tb_spf;
+        private CheckBox cb_calc_quant_foco;
     }
 }

@@ -151,23 +151,39 @@ namespace AlbionRefinoHelper
 
         private void cb_itens_SelectedIndexChanged(object sender, EventArgs e)
         {
-            _EscolheuTier = cb_itens.SelectedIndex != -1;
+            if (cb_itens.SelectedIndex == -1)
+            {
+                _EscolheuTier = false;
+                return;
+            }
+            _EscolheuTier = true;
 
-            if (cb_itens.SelectedItem.ToString() == "Pelego T2")
+            string itemSelecionado = cb_itens.SelectedItem.ToString();
+
+            if ((itemSelecionado == "Pelego T2" || itemSelecionado == "Pelego T3") && _Encantamento != 0)
+            {
+                if (cb_encantamento.Items.Count > 0)
+                {
+                    cb_encantamento.SelectedIndex = 0;
+                }
+                return;
+            }
+
+            if (itemSelecionado == "Pelego T2")
             {
                 _Itens = "T2_HIDE";
                 _Refino = "T2_LEATHER";
                 return;
             }
-            if (cb_itens.SelectedItem.ToString() == "Pelego T3")
+
+            if (itemSelecionado == "Pelego T3")
             {
                 _Itens = "T3_HIDE";
                 _Refino = "T3_LEATHER";
                 return;
             }
 
-
-            string tier = cb_itens.SelectedItem.ToString() switch
+            string tier = itemSelecionado switch
             {
                 "Pelego T4" => "T4",
                 "Pelego T5" => "T5",
@@ -221,6 +237,11 @@ namespace AlbionRefinoHelper
                 "Encantamento 4" => 4,
                 _ => -1
             };
+
+            if (cb_itens.SelectedIndex != -1)
+            {
+                cb_itens_SelectedIndexChanged(sender, e);
+            }
         }
 
         private void cb_cidade_compra_SelectedIndexChanged(object sender, EventArgs e)
@@ -321,21 +342,61 @@ namespace AlbionRefinoHelper
             decimal precoPelego = decimal.TryParse(tb_material_1_preco.Text, out decimal val2) ? val2 : 0;
             decimal precoCouroAnt = decimal.TryParse(tb_material_2_preco.Text, out decimal val3) ? val3 : 0;
             decimal taxaNutricao = decimal.TryParse(tb_taxa_nutricao.Text, out decimal val4) ? val4 : 0;
-            decimal quantidade = decimal.TryParse(tb_quantidade.Text, out decimal val5) ? val5 : 1;
             int nivelFoco = int.TryParse(tb_nivel_foco.Text, out int val6) ? val6 : 0;
 
             int tier = cb_itens.SelectedIndex + 2;
 
             bool usaFoco = checkBox_usa_foco.Checked;
             bool cidadeBonus = checkBox_cidade_bonus.Checked;
-            decimal taxaDevolucao;
+            bool calcularPeloFocoDisponivel = cb_calc_quant_foco.Checked;
 
+            decimal taxaDevolucao;
             if (cidadeBonus && usaFoco) taxaDevolucao = 0.539m;
             else if (cidadeBonus && !usaFoco) taxaDevolucao = 0.367m;
             else if (!cidadeBonus && usaFoco) taxaDevolucao = 0.435m;
             else taxaDevolucao = 0.152m;
 
-            var (lucroUnitario, custoUnitario) = CalcularLucroUnitario(
+            decimal quantidade = 0;
+            int focoTotalUsado = 0;
+            double custoFocoUnitario = 0;
+
+            if (calcularPeloFocoDisponivel && usaFoco)
+            {
+                int focoDisponivel = int.TryParse(tb_custo_foco.Text.Replace(".", ""), out int f) ? f : 0;
+
+                custoFocoUnitario = CalcularCustoFocoUnitario(tier, _Encantamento, nivelFoco);
+
+                if (custoFocoUnitario > 0)
+                {
+                    double qtdCalculada = ((double)focoDisponivel * (1.0 - (double)taxaDevolucao)) / custoFocoUnitario;
+                    quantidade = (decimal)Math.Floor(qtdCalculada);
+                }
+                else
+                {
+                    quantidade = 0;
+                }
+
+                tb_quantidade.Text = quantidade.ToString("N0");
+
+                focoTotalUsado = focoDisponivel;
+            }
+            else
+            {
+                quantidade = decimal.TryParse(tb_quantidade.Text, out decimal val5) ? val5 : 1;
+
+                if (usaFoco)
+                {
+                    custoFocoUnitario = CalcularCustoFocoUnitario(tier, _Encantamento, nivelFoco);
+
+                    double custoTotalCiclo = (custoFocoUnitario * (double)quantidade) / (1.0 - (double)taxaDevolucao);
+                    focoTotalUsado = (int)custoTotalCiclo;
+
+                    if (!calcularPeloFocoDisponivel)
+                        tb_custo_foco.Text = focoTotalUsado.ToString("N0");
+                }
+            }
+
+            var (lucroUnitario, custoSilverUnitario) = CalcularLucroUnitario(
                 precoRefinado,
                 precoPelego,
                 precoCouroAnt,
@@ -347,9 +408,9 @@ namespace AlbionRefinoHelper
             decimal lucroTotal = lucroUnitario * quantidade;
 
             decimal margemLucro = 0;
-            if (custoUnitario > 0)
+            if (custoSilverUnitario > 0)
             {
-                margemLucro = (lucroUnitario / custoUnitario) * 100;
+                margemLucro = (lucroUnitario / custoSilverUnitario) * 100;
             }
 
             tb_lucro_porcentagem.Text = margemLucro.ToString("F2") + "%";
@@ -360,17 +421,10 @@ namespace AlbionRefinoHelper
             else
                 tb_lucro_total.ForeColor = Color.Red;
 
-            tb_investimento_total.Text = (custoUnitario * quantidade).ToString("N0");
+            tb_investimento_total.Text = (custoSilverUnitario * quantidade).ToString("N0");
 
             decimal fatorConsumo = 1 - taxaDevolucao;
-
-            int qtdBasePelegos = tier switch
-            {
-                4 => 2,
-                5 => 3,
-                6 => 4,
-                _ => 5
-            };
+            int qtdBasePelegos = tier switch { 4 => 2, 5 => 3, 6 => 4, _ => 5 };
 
             decimal qtdPelegosReal = (qtdBasePelegos * quantidade) * fatorConsumo;
             decimal qtdCouroReal = quantidade * fatorConsumo;
@@ -378,39 +432,33 @@ namespace AlbionRefinoHelper
             tb_quant_material_1.Text = qtdPelegosReal.ToString("N0");
             tb_quant_material_2.Text = qtdCouroReal.ToString("N0");
 
-            if (usaFoco)
+            if (usaFoco && focoTotalUsado > 0)
             {
-                int custoFocoTotal = CalcularFocoTotal(tier, _Encantamento, nivelFoco, (int)quantidade);
-                tb_custo_foco.Text = custoFocoTotal.ToString("N0");
+                decimal spf = lucroTotal / focoTotalUsado;
+                tb_spf.Text = spf.ToString("N2");
+
+                if (spf >= 100)
+                {
+                    tb_spf.BackColor = Color.LightGreen;
+                    tb_spf.ForeColor = Color.Black;
+                }
+                else if (spf > 0)
+                {
+                    tb_spf.BackColor = Color.LightYellow;
+                    tb_spf.ForeColor = Color.Black;
+                }
+                else
+                {
+                    tb_spf.BackColor = Color.LightCoral;
+                    tb_spf.ForeColor = Color.White;
+                }
             }
             else
             {
-                tb_custo_foco.Text = "0";
+                tb_spf.Text = "0";
+                tb_spf.BackColor = SystemColors.Window;
+                if (!usaFoco) tb_custo_foco.Text = "0";
             }
-        }
-
-        private int CalcularFocoTotal(int tier, int encantamento, int nivelSpec, int quantidade)
-        {
-            int[,] baseCostTable = new int[,]
-            {
-            { 15, 28, 48, 86, 150 },   // T4 (.0, .1, .2, .3, .4)
-            { 28, 51, 88, 159, 279 },  // T5
-            { 55, 99, 172, 310, 542 }, // T6
-            { 109, 197, 342, 615, 1076 }, // T7
-            { 218, 393, 681, 1226, 2146 } // T8
-            };
-
-            if (tier < 4 || tier > 8) return 0;
-            if (encantamento < 0) encantamento = 0;
-            if (encantamento > 4) encantamento = 4;
-
-            int baseCost = baseCostTable[tier - 4, encantamento];
-
-            double eficiencia = nivelSpec * 250;
-
-            double custoUnitario = baseCost * Math.Pow(0.5, eficiencia / 10000.0);
-
-            return (int)(custoUnitario * quantidade);
         }
 
         private (decimal lucro, decimal custoTotal) CalcularLucroUnitario(decimal precoVenda, decimal precoPelego, decimal precoCouroAnterior, int tier, decimal taxaDevolucao, decimal taxaUsoLoja)
@@ -444,5 +492,60 @@ namespace AlbionRefinoHelper
             return (lucroUnitario, custoTotalUnitario);
         }
 
+        private void cb_calc_quant_foco_CheckedChanged(object sender, EventArgs e)
+        {
+            if (cb_calc_quant_foco.Checked)
+            {
+                tb_quantidade.Enabled = false;
+                tb_custo_foco.Enabled = true;
+
+                tb_quantidade.ReadOnly = true;
+                tb_custo_foco.ReadOnly = false;
+                tb_custo_foco.BackColor = Color.White;
+                tb_custo_foco.Text = "10000";
+                tb_custo_foco.Focus();
+
+                checkBox_usa_foco.Checked = true;
+                checkBox_usa_foco.Enabled = false;
+            }
+            else
+            {
+                tb_quantidade.Enabled = true;
+                tb_custo_foco.Enabled = false;
+
+                tb_quantidade.ReadOnly = false;
+                tb_custo_foco.ReadOnly = true;
+
+                tb_quantidade.Text = "";
+                tb_custo_foco.BackColor = SystemColors.Control;
+                tb_custo_foco.Text = "0";
+
+                checkBox_usa_foco.Enabled = true;
+            }
+        }
+
+        private double CalcularCustoFocoUnitario(int tier, int encantamento, int nivelSpec)
+        {
+            int[,] baseCostTable = new int[,]
+            {
+                { 15, 28, 48, 86, 150 },      // T4
+                { 28, 51, 88, 159, 279 },     // T5
+                { 55, 99, 172, 310, 542 },    // T6
+                { 109, 197, 342, 615, 1076 }, // T7
+                { 218, 393, 681, 1226, 2146 } // T8
+            };
+
+            if (tier < 4 || tier > 8) return 0;
+            if (encantamento < 0) encantamento = 0;
+            if (encantamento > 4) encantamento = 4;
+
+            int baseCost = baseCostTable[tier - 4, encantamento];
+
+            double eficiencia = nivelSpec * 250;
+
+            double custoFinal = baseCost * Math.Pow(0.5, eficiencia / 10000.0);
+
+            return custoFinal;
+        }
     }
 }
