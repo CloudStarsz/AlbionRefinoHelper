@@ -45,12 +45,13 @@ namespace AlbionRefinoHelper
             var queryRefino = todosDados.Where(x => !EhColeta(x));
 
             var melhoresPrecosColeta = queryColeta
-                .GroupBy(x => x.item_id)
-                .ToDictionary(g => g.Key, g => (long)(g.Where(x => x.sell_price_min > 0).Min(x => (long?)x.sell_price_min) ?? 0));
+            .GroupBy(x => x.item_id)
+            .ToDictionary(g => g.Key, g => (long)g.Max(x => x.buy_price_max));
 
             var melhoresPrecosRefino = queryRefino
                 .GroupBy(x => x.item_id)
-                .ToDictionary(g => g.Key, g => (long)g.Max(x => x.buy_price_max));
+                .ToDictionary(g => g.Key, g => (long)(g.Where(x => x.sell_price_min > 0)
+                                                       .Min(x => (long?)x.sell_price_min) ?? 0));
 
             if (_EscolheuCidadeCompra && cb_cidade_compra.SelectedItem != null)
             {
@@ -85,6 +86,16 @@ namespace AlbionRefinoHelper
 
         private void PreencherGridColeta(List<Mercado> itens, Dictionary<string, long> melhoresPrecos)
         {
+            var rankingPorItem = itens
+                .Where(x => x.sell_price_min > 0)
+                .GroupBy(x => x.item_id)
+                .ToDictionary(g => g.Key, g => g
+                    .Select(x => x.sell_price_min)
+                    .Distinct()
+                    .OrderBy(p => p)
+                    .Take(2)
+                    .ToList());
+
             foreach (var item in itens)
             {
                 int index = dataGrid_materiais.Rows.Add(
@@ -94,15 +105,34 @@ namespace AlbionRefinoHelper
                     item.sell_price_max_date
                 );
 
-                if (item.sell_price_min > 0 && melhoresPrecos.ContainsKey(item.item_id) && item.sell_price_min == melhoresPrecos[item.item_id])
+                if (item.sell_price_min > 0 && rankingPorItem.ContainsKey(item.item_id))
                 {
-                    dataGrid_materiais.Rows[index].DefaultCellStyle.BackColor = Color.LightGreen;
+                    var topPrecos = rankingPorItem[item.item_id];
+
+                    if (topPrecos.Count > 0 && item.sell_price_min == topPrecos[0])
+                    {
+                        dataGrid_materiais.Rows[index].DefaultCellStyle.BackColor = Color.LightGreen;
+                    }
+                    else if (topPrecos.Count > 1 && item.sell_price_min == topPrecos[1])
+                    {
+                        dataGrid_materiais.Rows[index].DefaultCellStyle.BackColor = Color.LightYellow;
+                    }
                 }
             }
         }
 
         private void PreencherGridRefino(List<Mercado> itens, Dictionary<string, long> melhoresPrecos)
         {
+            var rankingPorItem = itens
+                .Where(x => x.buy_price_max > 0)
+                .GroupBy(x => x.item_id)
+                .ToDictionary(g => g.Key, g => g
+                    .Select(x => x.buy_price_max)
+                    .Distinct()
+                    .OrderByDescending(p => p)
+                    .Take(2)
+                    .ToList());
+
             foreach (var item in itens)
             {
                 int index = dataGrid_Refinos.Rows.Add(
@@ -112,9 +142,18 @@ namespace AlbionRefinoHelper
                     item.buy_price_max_date
                 );
 
-                if (item.buy_price_max > 0 && melhoresPrecos.ContainsKey(item.item_id) && item.buy_price_max == melhoresPrecos[item.item_id])
+                if (item.buy_price_max > 0 && rankingPorItem.ContainsKey(item.item_id))
                 {
-                    dataGrid_Refinos.Rows[index].DefaultCellStyle.BackColor = Color.LightGreen;
+                    var topPrecos = rankingPorItem[item.item_id];
+
+                    if (topPrecos.Count > 0 && item.buy_price_max == topPrecos[0])
+                    {
+                        dataGrid_Refinos.Rows[index].DefaultCellStyle.BackColor = Color.LightGreen;
+                    }
+                    else if (topPrecos.Count > 1 && item.buy_price_max == topPrecos[1])
+                    {
+                        dataGrid_Refinos.Rows[index].DefaultCellStyle.BackColor = Color.LightYellow;
+                    }
                 }
             }
         }
@@ -344,7 +383,14 @@ namespace AlbionRefinoHelper
             decimal taxaNutricao = decimal.TryParse(tb_taxa_nutricao.Text, out decimal val4) ? val4 : 0;
             int nivelFoco = int.TryParse(tb_nivel_foco.Text, out int val6) ? val6 : 0;
 
-            int tier = cb_itens.SelectedIndex + 2;
+            int tier = 4;
+            if (!string.IsNullOrEmpty(tb_material_1.Text) && tb_material_1.Text.Length >= 2)
+            {
+                if (int.TryParse(tb_material_1.Text.Substring(1, 1), out int t))
+                {
+                    tier = t;
+                }
+            }
 
             bool usaFoco = checkBox_usa_foco.Checked;
             bool cidadeBonus = checkBox_cidade_bonus.Checked;
@@ -360,11 +406,21 @@ namespace AlbionRefinoHelper
             int focoTotalUsado = 0;
             double custoFocoUnitario = 0;
 
+            int encantamentoReal = 0;
+            if (tb_material_1.Text.Contains("@"))
+            {
+                var partes = tb_material_1.Text.Split('@');
+                if (partes.Length > 1 && int.TryParse(partes[1], out int enc))
+                {
+                    encantamentoReal = enc;
+                }
+            }
+
             if (calcularPeloFocoDisponivel && usaFoco)
             {
                 int focoDisponivel = int.TryParse(tb_custo_foco.Text.Replace(".", ""), out int f) ? f : 0;
 
-                custoFocoUnitario = CalcularCustoFocoUnitario(tier, _Encantamento, nivelFoco);
+                custoFocoUnitario = CalcularCustoFocoUnitario(tier, encantamentoReal, nivelFoco);
 
                 if (custoFocoUnitario > 0)
                 {
@@ -386,7 +442,7 @@ namespace AlbionRefinoHelper
 
                 if (usaFoco)
                 {
-                    custoFocoUnitario = CalcularCustoFocoUnitario(tier, _Encantamento, nivelFoco);
+                    custoFocoUnitario = CalcularCustoFocoUnitario(tier, encantamentoReal, nivelFoco);
 
                     double custoTotalCiclo = (custoFocoUnitario * (double)quantidade) / (1.0 - (double)taxaDevolucao);
                     focoTotalUsado = (int)custoTotalCiclo;
